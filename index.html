@@ -238,5 +238,192 @@
   </div>
 
 </div>
+
+<!-- BREAKDOWN OVERLAY -->
+<div id="breakdown-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; font-family:'VT323',monospace; overflow:hidden;">
+
+  <!-- Left: terminal scrolling code -->
+  <div id="terminal-feed" style="position:absolute; top:0; left:0; width:50%; height:100%; overflow:hidden; padding:12px; color:#ffffff; font-size:15px; line-height:1.4; white-space:pre-wrap; word-break:break-all;"></div>
+
+  <!-- Right: ASCII art appears -->
+  <div id="ascii-panel" style="position:absolute; top:0; left:50%; width:50%; height:100%; display:flex; align-items:center; justify-content:center; padding:20px;">
+    <div id="ascii-final" style="display:none; color:#ffffff; font-family:'VT323',monospace; font-size:clamp(8px,1.4vw,18px); line-height:1.2; white-space:pre;"></div>
+  </div>
+
+  <!-- divider -->
+  <div style="position:absolute; top:0; left:50%; width:1px; height:100%; background:#333;"></div>
+</div>
+
+<script>
+(function() {
+  var terminalLines = [
+    'BOOT SEQUENCE INITIATED...',
+    'CHECKING MEMORY.................... OK',
+    'LOADING KERNEL..................... FAIL',
+    'RETRY KERNEL....................... FAIL',
+    'BYPASSING INTEGRITY CHECK.......... OK',
+    'MOUNTING /archive/cau-op........... ERROR',
+    'UNMOUNTING /archive/cau-op......... OK',
+    'SCANNING SECTORS...',
+    '> sector 0x00A1 ......... corrupted',
+    '> sector 0x00A2 ......... corrupted',
+    '> sector 0x00A3 ......... OK',
+    '> sector 0x00A4 ......... corrupted',
+    '> sector 0x00B1 ......... corrupted',
+    'WARNING: FILE SYSTEM COMPROMISED',
+    'ATTEMPTING DATA RECOVERY...',
+    'int main() { return 0; }',
+    'segmentation fault (core dumped)',
+    '0x00000000 0x00000000 0x00000000',
+    'NullPointerException at 0xDEADBEEF',
+    'TRACE: ../src/archive.c:412',
+    'TRACE: ../src/index.c:88',
+    'KILLING PROCESS 1441........... OK',
+    'KILLING PROCESS 1442........... OK',
+    'KILLING ALL PROCESSES.......... OK',
+    '>>> SYSTEM UNSTABLE <<<',
+    'chmod 777 /dev/null',
+    'rm -rf /archive/*',
+    'ERROR: cannot remove — permission denied',
+    'sudo rm -rf /archive/*',
+    'DELETING............',
+    '.............................',
+    '.............................',
+    'DELETE COMPLETE',
+    '0xFFFF 0xFFFF 0xFFFF 0xFFFF',
+    'STACK OVERFLOW AT 0x4F3A',
+    'HEAP CORRUPTION DETECTED',
+    '>>> FATAL ERROR <<<',
+    'CAU-OP PROCESS: TERMINATED',
+    '',
+    '> WHO KILLED CAU-OP?',
+    '> CAU-OP KILLED ITSELF.',
+    '',
+    'WRITING EPITAPH TO /dev/screen...',
+    '......................................',
+    '......................................',
+    '......................................',
+  ];
+
+  var ascii = [
+    ' ██████╗ █████╗ ██╗   ██╗      ',
+    '██╔════╝██╔══██╗██║   ██║      ',
+    '██║     ███████║██║   ██║      ',
+    '██║     ██╔══██║██║   ██║      ',
+    '╚██████╗██║  ██║╚██████╔╝      ',
+    ' ╚═════╝╚═╝  ╚═╝ ╚═════╝       ',
+    '                                ',
+    '██████╗ ██████╗                 ',
+    '██╔══██╗██╔══██╗                ',
+    '██║  ██║██████╔╝                ',
+    '██║  ██║██╔═══╝                 ',
+    '██████╔╝██║                     ',
+    '╚═════╝ ╚═╝                     ',
+    '                                ',
+    '██╗███████╗                     ',
+    '██║██╔════╝                     ',
+    '██║███████╗                     ',
+    '██║╚════██║                     ',
+    '██║███████║                     ',
+    '╚═╝╚══════╝                     ',
+    '                                ',
+    '██████╗ ███████╗ █████╗ ██████╗ ',
+    '██╔══██╗██╔════╝██╔══██╗██╔══██╗',
+    '██║  ██║█████╗  ███████║██║  ██║',
+    '██║  ██║██╔══╝  ██╔══██║██║  ██║',
+    '██████╔╝███████╗██║  ██║██████╔╝',
+    '╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ',
+    '                                ',
+    'L O N G   L I V E               ',
+    '                                ',
+    '██████╗ █████╗ ██╗   ██╗        ',
+    '██╔════╝██╔══██╗██║   ██║      ',
+    '██║     ███████║██║   ██║      ',
+    '██║     ██╔══██║██║   ██║      ',
+    '╚██████╗██║  ██║╚██████╔╝      ',
+    ' ╚═════╝╚═╝  ╚═╝ ╚═════╝       ',
+    '                                ',
+    '██████╗ ██████╗                 ',
+    '██╔══██╗██╔══██╗                ',
+    '██║  ██║██████╔╝                ',
+    '██║  ██║██╔═══╝                 ',
+    '██████╔╝██║                     ',
+    '╚═════╝ ╚═╝                     ',
+  ].join('\n');
+
+  // Phase 1: page glitches
+  function startPageGlitch() {
+    var page = document.querySelector('.retro-page');
+    var glitchInt = setInterval(function() {
+      page.style.filter = 'hue-rotate(' + Math.floor(Math.random()*360) + 'deg) saturate(' + (Math.random()*5+1) + ')';
+      page.style.transform = 'skewX(' + (Math.random()*4-2) + 'deg) translateX(' + (Math.random()*10-5) + 'px)';
+    }, 60);
+    setTimeout(function() {
+      clearInterval(glitchInt);
+      page.style.filter = '';
+      page.style.transform = '';
+      startTerminal();
+    }, 1500);
+  }
+
+  // Phase 2: terminal feed on left side
+  function startTerminal() {
+    var overlay = document.getElementById('breakdown-overlay');
+    overlay.style.display = 'block';
+    var feed = document.getElementById('terminal-feed');
+    var lineIndex = 0;
+    var content = '';
+
+    function printNextLine() {
+      if (lineIndex >= terminalLines.length) {
+        // Done printing — show ASCII on the right
+        showAscii();
+        return;
+      }
+      var line = terminalLines[lineIndex];
+      lineIndex++;
+      // Type the line char by char
+      var charIndex = 0;
+      function typeChar() {
+        if (charIndex <= line.length) {
+          feed.textContent = content + line.slice(0, charIndex) + (charIndex < line.length ? '_' : '');
+          charIndex++;
+          // Scroll to bottom
+          feed.scrollTop = feed.scrollHeight;
+          setTimeout(typeChar, Math.random() * 18 + 4);
+        } else {
+          content += line + '\n';
+          feed.textContent = content;
+          feed.scrollTop = feed.scrollHeight;
+          // Pause between lines
+          var pause = line === '' ? 80 : Math.random() * 120 + 30;
+          setTimeout(printNextLine, pause);
+        }
+      }
+      typeChar();
+    }
+
+    printNextLine();
+  }
+
+  // Phase 3: ASCII types in on the right, no glow
+  function showAscii() {
+    var el = document.getElementById('ascii-final');
+    el.style.display = 'block';
+    var i = 0;
+    var typeInt = setInterval(function() {
+      if (i >= ascii.length) {
+        clearInterval(typeInt);
+        return;
+      }
+      el.textContent = ascii.slice(0, i + 1);
+      i += 2;
+    }, 12);
+  }
+
+  setTimeout(startPageGlitch, 15000);
+})();
+</script>
+
 </body>
 </html>
